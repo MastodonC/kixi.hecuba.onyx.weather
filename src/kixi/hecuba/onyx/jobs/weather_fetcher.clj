@@ -50,7 +50,8 @@
         )))
 
 (defn pull-weather-station-day-data [querydate siteid]
-  (mapv (fn [hour] (-> (pull-data querydate (format "%02d00" hour) siteid)
-                       (process-data-str)
-                       (keep-temp-date-time)))
+  (mapv (fn [hour] (try (-> (pull-data querydate (format "%02d00" hour) siteid)
+                            (process-data-str)
+                            (keep-temp-date-time))
+                        (catch Exception e (str "Exception caught: " (.getMessage e)))))
         (range 0 24)))
