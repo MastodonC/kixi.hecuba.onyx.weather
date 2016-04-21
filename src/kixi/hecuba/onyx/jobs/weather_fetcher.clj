@@ -55,3 +55,11 @@
                             (keep-temp-date-time))
                         (catch Exception e (str "Exception caught: " (.getMessage e)))))
         (range 0 24)))
+
+;; the result of this message will be serialised and
+;; sent to the outgoing kafka queue (write message)
+;; Onyx expects a map with {:message your-message}
+
+(defn get-data [fn-data]
+  (println (str "***** k.h.o.j.wf - data - " fn-data))
+  {:message fn-data})
