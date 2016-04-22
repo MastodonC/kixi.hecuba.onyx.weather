@@ -11,8 +11,11 @@
             [clojure.tools.logging :as log]
             [environ.core :refer [env]]))
 
+;; Date/time formatters
 (def tformat (f/formatter "YYYY-MM-dd HH:mm"))
+(def dformat (f/formatter "dd/MM/YYYY"))
 
+;; Base temperature for degree day calculations.
 (def tbase 15.5)
 
 (defn format-key [str-key]
@@ -89,9 +92,19 @@
                         :timestamp (f/unparse (f/formatters :date-time)
                                               (f/parse tformat (str date " " time)))})) measurement-data))
 
+(defn build-payload [weather-date fn-data]
+  (let [measurements (create-measurements (pull-weather-station-day-data [weather-date (:entity-id fn-data)]))
+        degree-day (create-degree-day-measurement measurements)]
+    {:kafka-payload fn-data
+     :entity-id fn-data
+     :measurements measurements
+     :degree-day degree-day}))
+
 ;; incoming payload from onyx workflow arrives here (fn-data)
 ;; we're just adding to it and passing it on to the outgoing
 ;; kafka queue.
 ;; Onyx expects a map with {:message your-message}
 (defn get-data [fn-data]
-  {:message fn-data})
+  {:message (build-payload
+             (f/unparse dformat (t/minus (t/now) (t/days 1)))
+             fn-data)})
