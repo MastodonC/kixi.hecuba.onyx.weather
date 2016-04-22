@@ -8,7 +8,12 @@
             [clojure.data.csv      :as csv]
             [clojure.data.json     :as json]
             [clojure.set           :as set]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [environ.core :refer [env]]))
+
+(def tformat (f/formatter "YYYY-MM-dd HH:mm"))
+
+(def tbase 15.5)
 
 (defn format-key [str-key]
   (when (string? str-key)
@@ -24,6 +29,21 @@
         headers (map format-key (first data))
         body (vec (rest data))]
     (map #(zipmap headers %) body)))
+
+;; The McKiver method (or British Gas method) as employed by the Met Office
+;; For more info see http://www.vesma.com/ddd/ddcalcs.htm
+(defn calc-degreedays-mckiver [tbase tmin tmax]
+  (double
+   (cond
+     (> tmin tbase)                0.0
+     (> (/ (+ tmax tmin) 2) tbase) (/ (- tbase tmin) 4)
+     (>= tmax tbase)               (- (/ (- tbase tmin) 2) (/ (- tmax tbase) 4))
+     (< tmax tbase)                (- tbase (/ (+ tmax tmin) 2))
+     :else -1)))
+
+(defn get-max-and-min [daily-readings]
+  (let [data (map (fn [t] (Float/parseFloat (:value t))) daily-readings)]
+    {:max (apply max data) :min (apply min data)}))
 
 (defn keep-temp-date-time [data-seq]
   (map #(set/rename-keys (select-keys % [:screen-temperature :site-code
@@ -56,10 +76,22 @@
                         (catch Exception e (str "Exception caught: " (.getMessage e)))))
         (range 0 24)))
 
-;; the result of this message will be serialised and
-;; sent to the outgoing kafka queue (write message)
-;; Onyx expects a map with {:message your-message}
+(defn create-degree-day-measurement [measurements]
+  (let [min-max (get-max-and-min measurements)]
+    {:value (calc-degreedays-mckiver tbase (:min min-max) (:max min-max))
+     :type "Temperature_degreedays"
+     :timestamp (:timestamp (first measurements))}))
 
+(defn create-measurements [measurement-data]
+  (map (fn [reading] (let [{:keys [temperature date time]} (first reading)]
+                       {:value temperature
+                        :type "Temperature"
+                        :timestamp (f/unparse (f/formatters :date-time)
+                                              (f/parse tformat (str date " " time)))})) measurement-data))
+
+;; incoming payload from onyx workflow arrives here (fn-data)
+;; we're just adding to it and passing it on to the outgoing
+;; kafka queue.
+;; Onyx expects a map with {:message your-message}
 (defn get-data [fn-data]
-  (println (str "***** k.h.o.j.wf - data - " fn-data))
   {:message fn-data})
