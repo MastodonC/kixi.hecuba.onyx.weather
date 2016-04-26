@@ -3,7 +3,7 @@
             [clj-http.client :as client]
             [environ.core :refer [env]]))
 
-(def api-endpoint "http://www.getembed.com/4/")
+(def api-endpoint "http://localhost:8010/4/")
 
 (defn run-api-search [{:keys [entity-id] :as args-map}]
   (let [url-to-get (str api-endpoint

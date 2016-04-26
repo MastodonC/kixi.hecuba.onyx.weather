@@ -45,8 +45,10 @@
      :else -1)))
 
 (defn get-max-and-min [daily-readings]
-  (let [data (map (fn [t] (Float/parseFloat (:value t))) daily-readings)]
-    {:max (apply max data) :min (apply min data)}))
+  (try
+    (let [data (map (fn [t] (Float/parseFloat (:value t))) daily-readings)]
+      {:max (apply max data) :min (apply min data)})
+    (catch Exception e (str "Exception caught in get-max-and-min:" (.getMessage e)))))
 
 (defn keep-temp-date-time [data-seq]
   (map #(set/rename-keys (select-keys % [:screen-temperature :site-code
@@ -58,25 +60,27 @@
 
 (defn pull-data
   "Get Metoffice data as a string"
-  ([querydate querytime siteid]
-   (->> (client/post "http://datagovuk.cloudapp.net/query"
-                     {:form-params {:Type "Observation"
-                                    :PredictionSiteID siteid
-                                    :ObservationSiteID siteid
-                                    :Date querydate ;; dd/mm/yyyy
-                                    :PredictionTime querytime ;; 0000
-                                    }
-                      :follow-redirects true})
-        :body
-        (re-find #"https://datagovuk.blob.core.windows.net/csv/[a-z0-9]+.csv")
-        slurp
-        )))
+  [querydate querytime siteid]
+  (->> (client/post "http://datagovuk.cloudapp.net/query"
+                    {:form-params {:Type "Observation"
+                                   :PredictionSiteID siteid
+                                   :ObservationSiteID siteid
+                                   :Date querydate ;; dd/mm/yyyy
+                                   :PredictionTime querytime ;; 0000
+                                   }
+                     :follow-redirects true})
+       :body
+       (re-find #"https://datagovuk.blob.core.windows.net/csv/[a-z0-9]+.csv")
+       (client/get)
+       :body
+       ))
 
 (defn pull-weather-station-day-data [querydate siteid]
   (mapv (fn [hour] (try (-> (pull-data querydate (format "%02d00" hour) siteid)
                             (process-data-str)
                             (keep-temp-date-time))
-                        (catch Exception e (str "Exception caught: " (.getMessage e)))))
+                        (catch Exception e (str "Exception caught: " (.getMessage e)))
+                        ))
         (range 0 24)))
 
 (defn create-degree-day-measurement [measurements]
@@ -86,14 +90,16 @@
      :timestamp (:timestamp (first measurements))}))
 
 (defn create-measurements [measurement-data]
-  (map (fn [reading] (let [{:keys [temperature date time]} (first reading)]
-                       {:value temperature
-                        :type "Temperature"
-                        :timestamp (f/unparse (f/formatters :date-time)
-                                              (f/parse tformat (str date " " time)))})) measurement-data))
+  (map (fn [reading]
+         (println (str "weather fetcher reading : " reading))
+         (let [{:keys [temperature date time]} (first reading)]
+           {:value temperature
+            :type "Temperature"
+            :timestamp (f/unparse (f/formatters :date-time)
+                                  (f/parse tformat (str date " " time)))})) measurement-data))
 
 (defn build-payload [weather-date fn-data]
-  (let [measurements (create-measurements (pull-weather-station-day-data [weather-date (:entity-id fn-data)]))
+  (let [measurements (create-measurements (pull-weather-station-day-data weather-date (:property-code fn-data)))
         degree-day (create-degree-day-measurement measurements)]
     {:kafka-payload fn-data
      :entity-id fn-data
@@ -106,5 +112,5 @@
 ;; Onyx expects a map with {:message your-message}
 (defn get-data [fn-data]
   {:message (build-payload
-             (f/unparse dformat (t/minus (t/now) (t/days 1)))
+             (f/unparse dformat (t/minus (t/now) (t/days 2)))
              fn-data)})
