@@ -5,19 +5,24 @@
 
 (def api-endpoint "http://localhost:8010/4/")
 
+(defn run-http-get [url]
+  (-> url
+      (client/get
+       {:basic-auth [(env :hecuba-username)
+                     (env :hecuba-password)]
+        :Headers {"X-Api-Version" "2"}
+        :content-type :json
+        :socket-timeout 20000
+        :conn-timeout 20000})
+      :body))
+
 (defn run-api-search [{:keys [entity-id] :as args-map}]
   (let [url-to-get (str api-endpoint
                         "entities/"
                         entity-id
                         "/devices/")]
-    (try (let [response-json (-> (:body (client/get
-                                         url-to-get
-                                         {:basic-auth [(env :hecuba-username)
-                                                       (env :hecuba-password)]
-                                          :Headers {"X-Api-Version" "2"}
-                                          :content-type :json
-                                          :socket-timeout 20000
-                                          :conn-timeout 20000}))
+    (try (let [response-json (-> url-to-get
+                                 (run-http-get)
                                  (json/parse-string))]
            response-json)
          (catch Exception e (println e)))))
