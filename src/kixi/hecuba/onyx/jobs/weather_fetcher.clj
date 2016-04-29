@@ -46,7 +46,8 @@
   (try
     (let [data (map (fn [t] (Float/parseFloat (:value t))) daily-readings)]
       {:max (apply max data) :min (apply min data)})
-    (catch Exception e (str "Exception caught in get-max-and-min:" (.getMessage e)))))
+    (catch Exception e
+      {:max 0 :min 0})))
 
 (defn keep-temp-date-time [data-seq]
   (map #(set/rename-keys (select-keys % [:screen-temperature :site-code

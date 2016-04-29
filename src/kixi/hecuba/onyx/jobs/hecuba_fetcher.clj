@@ -17,11 +17,10 @@
                         "entities/"
                         entity-id
                         "/devices/")]
-    (try (let [response-json (-> url-to-get
-                                 (run-http-get)
-                                 (json/parse-string))]
-           response-json)
-         (catch Exception e (println e)))))
+    (try (-> url-to-get
+             (run-http-get)
+             (json/parse-string))
+         (catch Exception e (str "Exception caught in get-max-and-min:" (.getMessage e))))))
 
 ;; fetch the device info from Hecuba and add the readings to the incoming payload.
 ;; so we end up with entity/type/property-code info + device/sensors
