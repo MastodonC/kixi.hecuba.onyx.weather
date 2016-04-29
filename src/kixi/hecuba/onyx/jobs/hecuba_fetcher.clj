@@ -3,21 +3,17 @@
             [clj-http.client :as client]
             [environ.core :refer [env]]))
 
-(def api-endpoint "http://localhost:8010/4/")
-
 (defn run-http-get [url]
   (-> url
       (client/get
        {:basic-auth [(env :hecuba-username)
                      (env :hecuba-password)]
         :Headers {"X-Api-Version" "2"}
-        :content-type :json
-        :socket-timeout 20000
-        :conn-timeout 20000})
+        :content-type :json})
       :body))
 
 (defn run-api-search [{:keys [entity-id] :as args-map}]
-  (let [url-to-get (str api-endpoint
+  (let [url-to-get (str (env :hecuba-api-endpoint)
                         "entities/"
                         entity-id
                         "/devices/")]
@@ -33,6 +29,7 @@
 ;; variables instead:
 ;; export HECUBA_PASSWORD=youremail@email.thing and
 ;; export HECUBA_PASSWORD=mypassword
+;; export HECUBA_API_ENDPOINT=http://localhost:8010/4/
 
 (defn get-data [fn-data]
   (println (str "k.h.o.j.hf - data - " fn-data))

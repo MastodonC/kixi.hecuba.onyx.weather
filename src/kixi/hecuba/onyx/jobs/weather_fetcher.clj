@@ -15,9 +15,6 @@
 (def tformat (f/formatter "YYYY-MM-dd HH:mm"))
 (def dformat (f/formatter "dd/MM/YYYY"))
 
-;; Base temperature for degree day calculations.
-(def tbase 15.5)
-
 (defn format-key [str-key]
   (when (string? str-key)
     (-> str-key
@@ -35,14 +32,15 @@
 
 ;; The McKiver method (or British Gas method) as employed by the Met Office
 ;; For more info see http://www.vesma.com/ddd/ddcalcs.htm
-(defn calc-degreedays-mckiver [tbase tmin tmax]
-  (double
-   (cond
-     (> tmin tbase)                0.0
-     (> (/ (+ tmax tmin) 2) tbase) (/ (- tbase tmin) 4)
-     (>= tmax tbase)               (- (/ (- tbase tmin) 2) (/ (- tmax tbase) 4))
-     (< tmax tbase)                (- tbase (/ (+ tmax tmin) 2))
-     :else -1)))
+(defn calc-degreedays-mckiver [tmin tmax]
+  (let [tbase 15.5]
+    (double
+     (cond
+       (> tmin tbase)                0.0
+       (> (/ (+ tmax tmin) 2) tbase) (/ (- tbase tmin) 4)
+       (>= tmax tbase)               (- (/ (- tbase tmin) 2) (/ (- tmax tbase) 4))
+       (< tmax tbase)                (- tbase (/ (+ tmax tmin) 2))
+       :else -1))))
 
 (defn get-max-and-min [daily-readings]
   (try
@@ -58,22 +56,24 @@
                           :observation-time :time})
        data-seq))
 
+(defn met-office-post-request [querydate querytime siteid]
+  (:body (client/post "http://datagovuk.cloudapp.net/query"
+                      {:form-params {:Type "Observation"
+                                     :PredictionSiteID siteid
+                                     :ObservationSiteID siteid
+                                     :Date querydate ;; dd/mm/yyyy
+                                     :PredictionTime querytime ;; 0000
+                                     }
+                       :follow-redirects true})))
+
 (defn pull-data
   "Get Metoffice data as a string"
   [querydate querytime siteid]
-  (->> (client/post "http://datagovuk.cloudapp.net/query"
-                    {:form-params {:Type "Observation"
-                                   :PredictionSiteID siteid
-                                   :ObservationSiteID siteid
-                                   :Date querydate ;; dd/mm/yyyy
-                                   :PredictionTime querytime ;; 0000
-                                   }
-                     :follow-redirects true})
-       :body
+  (->> (met-office-post-request querydate querytime siteid)
        (re-find #"https://datagovuk.blob.core.windows.net/csv/[a-z0-9]+.csv")
        (client/get)
-       :body
-       ))
+       :body))
+
 
 (defn pull-weather-station-day-data [querydate siteid]
   (mapv (fn [hour] (try (-> (pull-data querydate (format "%02d00" hour) siteid)
@@ -85,7 +85,7 @@
 
 (defn create-degree-day-measurement [measurements]
   (let [min-max (get-max-and-min measurements)]
-    {:value (calc-degreedays-mckiver tbase (:min min-max) (:max min-max))
+    {:value (calc-degreedays-mckiver (:min min-max) (:max min-max))
      :type "Temperature_degreedays"
      :timestamp (:timestamp (first measurements))}))
 
