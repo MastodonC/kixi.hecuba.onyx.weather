@@ -13,7 +13,7 @@
       :body))
 
 (defn run-api-search [{:keys [entity-id] :as args-map}]
-  (let [url-to-get (str (env :hecuba-api-endpoint)
+  (let [url-to-get (str (env :hecuba-endpoint)
                         "entities/"
                         entity-id
                         "/devices/")]

@@ -22,7 +22,7 @@
         (clojure.string/replace #" " "-")
         keyword)))
 
-(defn process-data-str
+(defn convert-day-data-to-seq
   "Return the data as a sequence of maps."
   [data-str]
   (let [data (csv/read-csv data-str)
@@ -49,7 +49,7 @@
     (catch Exception e
       {:max 0 :min 0})))
 
-(defn keep-temp-date-time [data-seq]
+(defn extract-temp-date-time-from-seq [data-seq]
   (map #(set/rename-keys (select-keys % [:screen-temperature :site-code
                                          :observation-date :observation-time])
                          {:screen-temperature :temperature
@@ -67,7 +67,7 @@
                                      }
                        :follow-redirects true})))
 
-(defn pull-data
+(defn get-met-office-csv-for-day-hour
   "Get Metoffice data as a string"
   [querydate querytime siteid]
   (->> (met-office-post-request querydate querytime siteid)
@@ -77,12 +77,11 @@
 
 
 (defn pull-weather-station-day-data [querydate siteid]
-  (mapv (fn [hour] (try (-> (pull-data querydate (format "%02d00" hour) siteid)
-                            (process-data-str)
-                            (keep-temp-date-time))
-                        (catch Exception e (str "Exception caught: " (.getMessage e)))
-                        ))
-        (range 0 24)))
+  (into [] (keep (fn [hour] (try (-> (get-met-office-csv-for-day-hour querydate (format "%02d00" hour) siteid)
+                                     (convert-day-data-to-seq)
+                                     (extract-temp-date-time-from-seq))
+                                 (catch Exception e (str "Exception caught: " (.getMessage e)))))
+                 (range 0 24))))
 
 (defn create-degree-day-measurement [measurements]
   (let [min-max (get-max-and-min measurements)]
@@ -92,7 +91,6 @@
 
 (defn create-measurements [measurement-data]
   (map (fn [reading]
-         (println (str "weather fetcher reading : " reading))
          (let [{:keys [temperature date time]} (first reading)]
            {:value temperature
             :type "Temperature"
