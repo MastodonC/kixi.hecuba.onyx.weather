@@ -10,8 +10,7 @@
             [kixi.hecuba.onyx.jobs.hecuba-fetcher]))
 
 (def workflow
-  [[:event/in-queue       :event/device-entity-info]
-   [:event/device-entity-info  :event/weather-station-data-request]
+  [[:event/in-queue       :event/weather-station-data-request]
    [:event/weather-station-data-request     :event/message-queue-out]])
 
 (defn build-catalog
@@ -34,13 +33,6 @@
     :kafka/empty-read-back-off 500
     :kafka/commit-interval 500
     :onyx/doc "Reads messages from a Kafka topic"}
-
-   {:onyx/name :event/device-entity-info
-    :onyx/fn :kixi.hecuba.onyx.jobs.hecuba-fetcher/get-data
-    :onyx/type :function
-    :onyx/batch-size batch-size
-    :onyx/batch-timeout batch-timeout
-    :onyx/doc "Hecuba entity detail fetcher"}
 
    {:onyx/name :event/weather-station-data-request
     :onyx/plugin :onyx.peer.function/function
