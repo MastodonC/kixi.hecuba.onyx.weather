@@ -16,6 +16,7 @@
                  [org.onyxplatform/onyx "0.8.11"]
                  [org.onyxplatform/onyx-kafka "0.8.11.0"]
                  [cheshire "5.5.0"]
-                 [com.taoensso/timbre "4.3.1"]]
+                 [com.taoensso/timbre "4.3.1"]
+                 [environ "1.0.2"]]
   :profiles {:dev {:dependencies [[org.clojure/tools.namespace "0.2.4"]]
                    :source-paths ["dev"]}})
