@@ -90,7 +90,7 @@
   (timbre/info "create-degree-day-measurement")
   (let [min-max (get-max-and-min measurements)]
     {:value (calc-degreedays-mckiver (:min min-max) (:max min-max))
-     :type "Temperature_degreedays"
+     :type "Temperature_degreeday"
      :timestamp (:timestamp (first measurements))}))
 
 (defn create-measurements [measurement-data]
