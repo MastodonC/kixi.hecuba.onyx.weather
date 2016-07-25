@@ -25,7 +25,7 @@
    :kafka/fetch-size 307200
    :kafka/chan-capacity 1000
    :kafka/offset-reset :smallest
-   :kafka/force-reset? true
+   :kafka/force-reset? false
    :kafka/empty-read-back-off 500
    :kafka/commit-interval 500
    :onyx/doc "Reads messages from a Kafka topic"})
@@ -40,7 +40,7 @@
    :kafka/request-size 307200
    :kafka/chan-capacity 1000
    :kafka/offset-reset :smallest
-   :kafka/force-reset? true
+   :kafka/force-reset? false
    :kafka/empty-read-back-off 500
    :kafka/commit-interval 500
    :onyx/doc "Writes outgoing measurements to Kafka topic"}
