@@ -41,10 +41,6 @@
         ""
         "Options:"
         options-summary
-        ""
-        "Actions:"
-        "  start-peers [npeers]    Start Onyx peers."
-        "  submit-job  [job-name]  Submit a registered job to an Onyx cluster."
         ""]
        (clojure.string/join \newline)))
 
@@ -69,24 +65,23 @@
     (cond (:help options) (exit 0 (usage summary))
           (not= (count arguments) 2) (exit 1 (usage summary))
           errors (exit 1 (error-msg errors)))
-    (case action
-      "start-peers" (let [{:keys [env-config peer-config] :as config}
-                          (read-config (:config options) {:profile (:profile options)})]
-                      (peer/start-peer argument peer-config env-config))
 
-      "submit-job" (let [{:keys [peer-config] :as config}
-                         (read-config (:config options) {:profile (:profile options)})
-                         job-name (if (keyword? argument) argument (str argument))]
-                     (assert-job-exists job-name)
-                     (let [job-id (:job-id
-                                   (onyx.api/submit-job peer-config
-                                                        (onyx.job/register-job job-name config)))]
-                       (println "Successfully submitted job: " job-id)
-                       (println "Blocking on job completion...")
-                       (onyx.test-helper/feedback-exception! peer-config job-id)
-                       (onyx.api/await-job-completion peer-config job-id)
-                       (exit 0 "Job Completed"))))))
+    (let [{:keys [env-config peer-config] :as config}
+          (read-config (:config options) {:profile (:profile options)})]
+      (peer/start-peer argument peer-config env-config))
 
+    (let [{:keys [peer-config] :as config}
+          (read-config (:config options) {:profile (:profile options)})
+          job-name (if (keyword? argument) argument (str argument))]
+      (assert-job-exists job-name)
+      (let [job-id (:job-id
+                    (onyx.api/submit-job peer-config
+                                         (onyx.job/register-job job-name config)))]
+        (println "Successfully submitted job: " job-id)
+        (println "Blocking on job completion...")
+        (onyx.test-helper/feedback-exception! peer-config job-id)
+        (onyx.api/await-job-completion peer-config job-id)
+        (exit 0 "Job Completed")))))
 
 (defn new-system
   []
@@ -97,19 +92,3 @@
                           job-name "weather-job"]
                       (assert-job-exists job-name)
                       (new-onyx-job job-name config)))))
-
-
-
-
-(comment
-
-  kixi.hecuba.onyx.components.onyx-job/new-onyx-job
-  (new-system)
-
-
-  (let [mode :dev]
-    (component/system-map
-     :onyx-events   (new-onyx-job mode 'kixi.hecuba.onyx.jobs.weather/build-job)))
-
-
-  )

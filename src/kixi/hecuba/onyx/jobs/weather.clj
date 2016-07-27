@@ -20,12 +20,12 @@
    :onyx/max-peers 1
    :kafka/topic "hecuba-weather-queue"
    :kafka/group-id "kixi-hecuba-weather"
-   :kafka/zookeeper "127.0.0.1:2181"
+   :kafka/zookeeper "zookeeper:2181"
    :kafka/deserializer-fn :kixi.hecuba.onyx.jobs.shared/deserialize-message-json
    :kafka/fetch-size 307200
    :kafka/chan-capacity 1000
    :kafka/offset-reset :smallest
-   :kafka/force-reset? true
+   :kafka/force-reset? false
    :kafka/empty-read-back-off 500
    :kafka/commit-interval 500
    :onyx/doc "Reads messages from a Kafka topic"})
@@ -35,12 +35,12 @@
    :onyx/max-peers 1
    :kafka/topic "hecuba-measurements-queue"
    :kafka/group-id "kixi-hecuba-weather"
-   :kafka/zookeeper "127.0.0.1:2181"
+   :kafka/zookeeper "zookeeper:2181"
    :kafka/serializer-fn :kixi.hecuba.onyx.jobs.shared/serialize-message-json
    :kafka/request-size 307200
    :kafka/chan-capacity 1000
    :kafka/offset-reset :smallest
-   :kafka/force-reset? true
+   :kafka/force-reset? false
    :kafka/empty-read-back-off 500
    :kafka/commit-interval 500
    :onyx/doc "Writes outgoing measurements to Kafka topic"}
