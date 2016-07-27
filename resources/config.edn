@@ -1,14 +1,14 @@
 {:env-config
  {:onyx/tenancy-id #profile {:default "1"
                              :docker #env ONYX_ID}
-  :onyx.bookkeeper/server? true
+  :onyx.bookkeeper/server? false
   :onyx.bookkeeper/local-quorum? true
   :onyx.bookkeeper/delete-server-data? true
   :onyx.bookkeeper/local-quorum-ports [3196 3197 3198]
   :onyx.bookkeeper/port 3196
   :zookeeper/address #profile {:default "127.0.0.1:2181"
-                               :docker "Zookeeper:2181"}
-  :zookeeper/server? #profile {:default true
+                               :docker "zookeeper:2181"}
+  :zookeeper/server? #profile {:default false
                                :docker false}
   :zookeeper.server/port 2188
   :onyx.log/config #profile {:default {:level :info}

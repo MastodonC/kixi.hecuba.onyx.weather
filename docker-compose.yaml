@@ -13,7 +13,7 @@ peer:
   links:
     - zookeeper:zookeeper
 
-zookeeper:
-  image: 'wurstmeister/zookeeper'
-  ports:
-    - '2181:2181'
+#zookeeper:
+#  image: 'jplock/zookeeper:3.4.6'
+#  ports:
+#    - '2181:2181'

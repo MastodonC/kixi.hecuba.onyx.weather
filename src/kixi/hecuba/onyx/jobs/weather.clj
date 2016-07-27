@@ -20,7 +20,7 @@
    :onyx/max-peers 1
    :kafka/topic "hecuba-weather-queue"
    :kafka/group-id "kixi-hecuba-weather"
-   :kafka/zookeeper "127.0.0.1:2181"
+   :kafka/zookeeper "zookeeper:2181"
    :kafka/deserializer-fn :kixi.hecuba.onyx.jobs.shared/deserialize-message-json
    :kafka/fetch-size 307200
    :kafka/chan-capacity 1000
@@ -35,7 +35,7 @@
    :onyx/max-peers 1
    :kafka/topic "hecuba-measurements-queue"
    :kafka/group-id "kixi-hecuba-weather"
-   :kafka/zookeeper "127.0.0.1:2181"
+   :kafka/zookeeper "zookeeper:2181"
    :kafka/serializer-fn :kixi.hecuba.onyx.jobs.shared/serialize-message-json
    :kafka/request-size 307200
    :kafka/chan-capacity 1000
