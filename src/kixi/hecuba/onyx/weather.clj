@@ -41,10 +41,6 @@
         ""
         "Options:"
         options-summary
-        ""
-        "Actions:"
-        "  start-peers [npeers]    Start Onyx peers."
-        "  submit-job  [job-name]  Submit a registered job to an Onyx cluster."
         ""]
        (clojure.string/join \newline)))
 
@@ -61,7 +57,6 @@
     (when-not (contains? jobs job-name)
       (error-msg (into [(str "There is no job registered under the name " job-name "\n")
                         "Available jobs: "] (keys jobs))))))
-
 
 (defn -main [& args]
   (let [{:keys [options arguments errors summary] :as pargs} (parse-opts args (cli-options))
@@ -88,8 +83,6 @@
         (onyx.api/await-job-completion peer-config job-id)
         (exit 0 "Job Completed")))))
 
-
-
 (defn new-system
   []
   (let [mode :dev]
@@ -99,19 +92,3 @@
                           job-name "weather-job"]
                       (assert-job-exists job-name)
                       (new-onyx-job job-name config)))))
-
-
-
-
-(comment
-
-  kixi.hecuba.onyx.components.onyx-job/new-onyx-job
-  (new-system)
-
-
-  (let [mode :dev]
-    (component/system-map
-     :onyx-events   (new-onyx-job mode 'kixi.hecuba.onyx.jobs.weather/build-job)))
-
-
-  )
