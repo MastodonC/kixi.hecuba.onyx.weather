@@ -7,10 +7,14 @@
             [clojure.tools.cli :refer [parse-opts]]
             [aero.core :refer [read-config]]
             [com.stuartsierra.component :as component]
+            [taoensso.timbre :as timbre]
             ;; load job
             [kixi.hecuba.onyx.jobs.weather]
+            [kixi.hecuba.onyx.jobs.measurements]
             [kixi.hecuba.onyx.new-onyx-job :refer [new-onyx-job]])
   (:gen-class))
+
+(def job-names ["weather-job" "measurements-job"])
 
 (defn file-exists?
   "Check both the file system and the resources/ directory
@@ -31,7 +35,9 @@
 
    ["-p" "--profile PROFILE" "Aero profile"
     :parse-fn (fn [profile] (clojure.edn/read-string (clojure.string/trim profile)))]
-
+   ["-n" "--npeers NPEERS" "Number of peers to startup."
+    :default 3
+    :parse-fn (fn [npeers] (Integer/parseInt npeers))]
    ["-h" "--help"]])
 
 (defn usage [options-summary]
@@ -49,7 +55,7 @@
        (clojure.string/join \newline errors)))
 
 (defn exit [status msg]
-  (println msg)
+  (timbre/info msg)
   (System/exit status))
 
 (defn assert-job-exists [job-name]
@@ -58,30 +64,30 @@
       (error-msg (into [(str "There is no job registered under the name " job-name "\n")
                         "Available jobs: "] (keys jobs))))))
 
+(defn start-job [job-name peer-config options]
+  (let [job-id (:job-id
+                (onyx.api/submit-job peer-config
+                                     (onyx.job/register-job job-name (:config options))))]
+    (timbre/info (format "Successfully submitted job: %s (%s)" job-id job-name))))
+
 (defn -main [& args]
   (let [{:keys [options arguments errors summary] :as pargs} (parse-opts args (cli-options))
         action (first args)
         argument (clojure.edn/read-string (second args))]
-    (cond (:help options) (exit 0 (usage summary))
-          (not= (count arguments) 2) (exit 1 (usage summary))
-          errors (exit 1 (error-msg errors)))
 
-    (let [{:keys [env-config peer-config] :as config}
-          (read-config (:config options) {:profile (:profile options)})]
-      (peer/start-peer argument peer-config env-config))
-
+    ;; start the jobs first, these go to zookeeper.
+    ;; If already registered with zookeeper then we can ignore them.
     (let [{:keys [peer-config] :as config}
           (read-config (:config options) {:profile (:profile options)})
-          job-name (if (keyword? argument) argument (str argument))]
-      (assert-job-exists job-name)
-      (let [job-id (:job-id
-                    (onyx.api/submit-job peer-config
-                                         (onyx.job/register-job job-name config)))]
-        (println "Successfully submitted job: " job-id)
-        (println "Blocking on job completion...")
-        (onyx.test-helper/feedback-exception! peer-config job-id)
-        (onyx.api/await-job-completion peer-config job-id)
-        (exit 0 "Job Completed")))))
+          active-jobs (set (map first (methods onyx.job/register-job)))]
+
+      (doseq [job job-names]
+        (start-job job peer-config options)))
+
+    ;; start our peer
+    (let [{:keys [env-config peer-config] :as config}
+          (read-config (:config options) {:profile (:profile options)})]
+      (peer/start-peer (:npeers options) peer-config env-config))))
 
 (defn new-system
   []
