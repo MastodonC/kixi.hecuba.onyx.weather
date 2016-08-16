@@ -35,9 +35,7 @@
 
    ["-p" "--profile PROFILE" "Aero profile"
     :parse-fn (fn [profile] (clojure.edn/read-string (clojure.string/trim profile)))]
-   ["-n" "--npeers NPEERS" "Number of peers to startup."
-    :default 3
-    :parse-fn (fn [npeers] (Integer/parseInt npeers))]
+
    ["-h" "--help"]])
 
 (defn usage [options-summary]
@@ -47,6 +45,10 @@
         ""
         "Options:"
         options-summary
+        ""
+        "Actions:"
+        "  start-peers [npeers]    Start Onyx peers."
+        "  submit-job  [job-name]  Submit a registered job to an Onyx cluster."
         ""]
        (clojure.string/join \newline)))
 
@@ -74,20 +76,45 @@
   (let [{:keys [options arguments errors summary] :as pargs} (parse-opts args (cli-options))
         action (first args)
         argument (clojure.edn/read-string (second args))]
+    (cond (:help options) (exit 0 (usage summary))
+          (not= (count arguments) 2) (exit 1 (usage summary))
+          errors (exit 1 (error-msg errors)))
+    (case action
+      "start-peers" (let [{:keys [env-config peer-config] :as config}
+                          (read-config (:config options) {:profile (:profile options)})]
+                      (peer/start-peer argument peer-config env-config))
 
-    ;; start the jobs first, these go to zookeeper.
-    ;; If already registered with zookeeper then we can ignore them.
-    (let [{:keys [peer-config] :as config}
-          (read-config (:config options) {:profile (:profile options)})
-          active-jobs (set (map first (methods onyx.job/register-job)))]
+      "submit-job" (let [{:keys [peer-config] :as config}
+                         (read-config (:config options) {:profile (:profile options)})
+                         job-name (if (keyword? argument) argument (str argument))]
+                     (assert-job-exists job-name)
+                     (let [job-id (:job-id
+                                   (onyx.api/submit-job peer-config
+                                                        (onyx.job/register-job job-name config)))]
+                       (println "Successfully submitted job: " job-id)
+                       (println "Blocking on job completion...")
+                       (onyx.test-helper/feedback-exception! peer-config job-id)
+                       (exit 0 "Job Completed"))))))
 
-      (doseq [job job-names]
-        (start-job job peer-config options)))
+(comment
+  (defn -main [& args]
+    (let [{:keys [options arguments errors summary] :as pargs} (parse-opts args (cli-options))
+          action (first args)
+          argument (clojure.edn/read-string (second args))]
 
-    ;; start our peer
-    (let [{:keys [env-config peer-config] :as config}
-          (read-config (:config options) {:profile (:profile options)})]
-      (peer/start-peer (:npeers options) peer-config env-config))))
+      ;; start the jobs first, these go to zookeeper.
+      ;; If already registered with zookeeper then we can ignore them.
+      (let [{:keys [peer-config] :as config}
+            (read-config (:config options) {:profile (:profile options)})
+            active-jobs (set (map first (methods onyx.job/register-job)))]
+
+        (doseq [job job-names]
+          (start-job job peer-config options)))
+
+      ;; start our peer
+      (let [{:keys [env-config peer-config] :as config}
+            (read-config (:config options) {:profile (:profile options)})]
+        (peer/start-peer (:npeers options) peer-config env-config)))))
 
 (defn new-system
   []
