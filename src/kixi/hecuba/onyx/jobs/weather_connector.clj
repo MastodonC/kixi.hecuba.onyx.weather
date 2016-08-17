@@ -71,7 +71,7 @@
 (defn get-met-office-csv-for-day-hour
   "Get Metoffice data as a string"
   [querydate querytime siteid]
-  (timbre/info (format "get-met-office-csv-for-day-hour qdate:%s qtime:%s siteid:%s" querydate querytime siteid))
+  (timbre/infof "get-met-office-csv-for-day-hour qdate:%s qtime:%s siteid:%s" querydate querytime siteid)
   (->> (met-office-post-request querydate querytime siteid)
        (re-find #"https://datagovuk.blob.core.windows.net/csv/[a-z0-9]+.csv")
        (client/get)
