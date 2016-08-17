@@ -14,8 +14,6 @@
             [kixi.hecuba.onyx.new-onyx-job :refer [new-onyx-job]])
   (:gen-class))
 
-(def job-names ["weather-job" "measurements-job"])
-
 (defn file-exists?
   "Check both the file system and the resources/ directory
   on the classpath for the existence of a file"
@@ -95,26 +93,6 @@
                        (println "Blocking on job completion...")
                        (onyx.test-helper/feedback-exception! peer-config job-id)
                        (exit 0 "Job Completed"))))))
-
-(comment
-  (defn -main [& args]
-    (let [{:keys [options arguments errors summary] :as pargs} (parse-opts args (cli-options))
-          action (first args)
-          argument (clojure.edn/read-string (second args))]
-
-      ;; start the jobs first, these go to zookeeper.
-      ;; If already registered with zookeeper then we can ignore them.
-      (let [{:keys [peer-config] :as config}
-            (read-config (:config options) {:profile (:profile options)})
-            active-jobs (set (map first (methods onyx.job/register-job)))]
-
-        (doseq [job job-names]
-          (start-job job peer-config options)))
-
-      ;; start our peer
-      (let [{:keys [env-config peer-config] :as config}
-            (read-config (:config options) {:profile (:profile options)})]
-        (peer/start-peer (:npeers options) peer-config env-config)))))
 
 (defn new-system
   []
