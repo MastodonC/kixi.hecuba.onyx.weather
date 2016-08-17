@@ -12,11 +12,7 @@
   [json-payload entity-id device-id]
   (let [json-to-send (json/generate-string {:measurements json-payload})
         endpoint (str (env :hecuba-endpoint) "entities/" entity-id "/devices/" device-id "/measurements/")]
-
-    (timbre/info (format "DATA: %s" json-to-send))
-
-
-    (timbre/info "Using endpoint: %s" (str (env :hecuba-endpoint) "entities/" entity-id "/devices/" device-id "/measurements/"))
+    (timbre/infof "Using endpoint: %s" endpoint)
 
     (try (client/post
           endpoint
@@ -32,17 +28,15 @@
          (finally {:message "push-payload-to-hecuba complete."}))))
 
 (defn get-data [fn-data]
-  ;; map of data passed in from the workflow here.
-  ;; TODO - needs to take the measurements and save them via Hecuba API
   (let [entity-id (get-in fn-data [:kafka-payload :entity-id])
         device-id (get-in fn-data [:kafka-payload :device_id])
         measurements (:measurements fn-data)
         degree-day [(:degree-day fn-data)]]
-    (timbre/info (format "Received measurements to write for device-id:%s on entity:%s" device-id entity-id))
+    (timbre/infof "Received measurements to write for device-id:%s on entity:%s" device-id entity-id)
     (push-payload-to-hecuba measurements entity-id device-id)
-    (timbre/info (format "Writing measurements to write for device-id:%s on entity:%s" device-id entity-id))
+    (timbre/infof "Writing measurements to write for device-id:%s on entity:%s" device-id entity-id)
     (push-payload-to-hecuba degree-day entity-id device-id)
-    (timbre/info (format "Writing degree-day to write for device-id:%s on entity:%s" device-id entity-id)))
+    (timbre/infof "Writing degree-day to write for device-id:%s on entity:%s" device-id entity-id))
   {:done true})
 
 (s/defn save-measurements

@@ -79,7 +79,7 @@
 
 
 (defn pull-weather-station-day-data [querydate siteid]
-  (timbre/info (format "pull-weather-station-day-data siteid:%s querydate:%s" siteid querydate) )
+  (timbre/infof "pull-weather-station-day-data siteid:%s querydate:%s" siteid querydate)
   (into [] (keep (fn [hour] (try (-> (get-met-office-csv-for-day-hour querydate (format "%02d00" hour) siteid)
                                      (convert-day-data-to-seq)
                                      (extract-temp-date-time-from-seq))

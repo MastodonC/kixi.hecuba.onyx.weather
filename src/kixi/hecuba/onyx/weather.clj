@@ -68,7 +68,7 @@
   (let [job-id (:job-id
                 (onyx.api/submit-job peer-config
                                      (onyx.job/register-job job-name (:config options))))]
-    (timbre/info (format "Successfully submitted job: %s (%s)" job-id job-name))))
+    (timbre/infof "Successfully submitted job: %s (%s)" job-id job-name)))
 
 (defn -main [& args]
   (let [{:keys [options arguments errors summary] :as pargs} (parse-opts args (cli-options))
@@ -91,8 +91,7 @@
                                                         (onyx.job/register-job job-name config)))]
                        (println "Successfully submitted job: " job-id)
                        (println "Blocking on job completion...")
-                       (onyx.test-helper/feedback-exception! peer-config job-id)
-                       (exit 0 "Job Completed"))))))
+                       (onyx.test-helper/feedback-exception! peer-config job-id))))))
 
 (defn new-system
   []

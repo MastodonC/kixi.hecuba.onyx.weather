@@ -35,6 +35,7 @@
 
 (defmethod register-job "weather-job"
   [job-name config]
+  (timbre/info "Config: " config)
   (let [batch-settings {:onyx/batch-size 1
                         :onyx/batch-timeout 1000
                         :onyx/min-peers 1
