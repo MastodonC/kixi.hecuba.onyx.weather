@@ -1,0 +1,51 @@
+{
+  "container": {
+    "type": "DOCKER",
+    "docker": {
+      "image": "@@IMAGE_PREFIX@@/@@APP_NAME@@:@@TAG@@",
+      "privileged": true,
+      "parameters": [
+         {"key": "env", "value": "ENVIRONMENT=@@ENVIRONMENT@@"},
+         {"key": "log-driver", "value": "gelf"},
+         {"key": "log-opt", "value": "gelf-address=udp://logstash.@@VPC@@-vpc.kixi:12201"},
+         {"key": "label", "value": "cluster=@@ENVIRONMENT@@"},
+         {"key": "label", "value": "application=@@APP_NAME@@@@CANARY@@"},
+         {"key": "env", "value":"ONYX_ID=1"},
+         {"key": "env", "value":"NPEERS=6"},
+         {"key": "env", "value":"ZOOKEEPER=master.mesos:2181"}
+
+      ],
+      "network": "BRIDGE",
+      "portMappings": [
+          {
+              "containerPort": 10015,
+              "hostPort": 10015,
+              "protocol": "tcp"
+          },
+          {
+              "containerPort": 5001,
+              "hostPort": 10016,
+              "protocol": "tcp"
+          },
+          {
+              "containerPort": 6358,
+              "hostPort": 6358,
+              "protocol": "tcp"
+          }
+      ]
+    }
+  },
+  "id": "@@APP_NAME@@@@CANARY@@",
+  "constraints": [["hostname", "UNIQUE"]],
+  "instances": @@INSTANCE_COUNT@@,
+  "cpus": 0.5,
+  "mem": 1048,
+  "healthChecks": [{
+        "protocol": "TCP",
+        "gracePeriodSeconds": 600,
+        "intervalSeconds": 30,
+        "portIndex": 0,
+        "timeoutSeconds": 10,
+        "maxConsecutiveFailures": 3
+  }]
+}

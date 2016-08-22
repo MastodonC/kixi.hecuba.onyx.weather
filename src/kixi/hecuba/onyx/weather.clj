@@ -91,7 +91,8 @@
                                                         (onyx.job/register-job job-name config)))]
                        (println "Successfully submitted job: " job-id)
                        (println "Blocking on job completion...")
-                       (onyx.test-helper/feedback-exception! peer-config job-id))))))
+                       ;; writing the job id of the out so you can query it against zookeeper when you need to.
+                       (spit (str job-name "-pid.lock") job-id))))))
 
 (defn new-system
   []
