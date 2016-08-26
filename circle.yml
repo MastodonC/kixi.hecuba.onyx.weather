@@ -15,7 +15,7 @@ deployment:
   #    - docker push mastodonc/kixi.hecuba.onyx.weather
   #    - ./deploy.sh $DEPLOY_IP production
   staging:
-    branch: master
+    branch: feature/docker
     commands:
       - lein clean
       - lein uberjar
@@ -24,7 +24,4 @@ deployment:
       - docker tag -f mastodonc/kixi.hecuba.onyx.weather mastodonc/kixi.hecuba.onyx.weather:git-$(echo $CIRCLE_SHA1 | cut -c1-12)
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push mastodonc/kixi.hecuba.onyx.weather
-      - ./deployment/deploy.sh kixi.hecuba.onyx.weather sandpit-staging-deploy.mastodonc.net staging 1 git-$(echo $CIRCLE_SHA1 | cut -c1-12) -canary
-      # Continue on success only
-      # Destroy Canary!!
-      - ./deployment/deploy.sh kixi.hecuba.onyx.weather sandpit-staging-deploy.mastodonc.net staging
+      - ./deployment/deploy.sh kixi.hecuba.onyx.weather sandpit-staging-deploy.mastodonc.net staging 1 git-$(echo $CIRCLE_SHA1 | cut -c1-12)

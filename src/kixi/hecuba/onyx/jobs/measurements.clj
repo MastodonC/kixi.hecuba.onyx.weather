@@ -45,7 +45,7 @@
                        :onyx/max-peers kafka-partitions
                        :kafka/topic "hecuba-measurements-queue"
                        :kafka/group-id "kixi-hecuba-weather-mgroup"
-                       :kafka/zookeeper "127.0.0.1:2181"
+                       :kafka/zookeeper (get-in config [:env-config :zookeeper/address])
                        :kafka/deserializer-fn :kixi.hecuba.onyx.jobs.shared/deserialize-message-json
                        :kafka/fetch-size 307200
                        :kafka/chan-capacity 1000

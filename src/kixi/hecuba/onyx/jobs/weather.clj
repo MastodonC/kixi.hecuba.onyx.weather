@@ -46,7 +46,7 @@
                        :onyx/max-peers kafka-partitions
                        :kafka/topic "hecuba-weather-queue"
                        :kafka/group-id "kixi-hecuba-weather-wgroup"
-                       :kafka/zookeeper "127.0.0.1:2181"
+                       :kafka/zookeeper (get-in config [:env-config :zookeeper/address])
                        :kafka/deserializer-fn :kixi.hecuba.onyx.jobs.shared/deserialize-message-json
                        :kafka/fetch-size 307200
                        :kafka/chan-capacity 1000
@@ -62,7 +62,7 @@
                         :onyx/type :output
                         :onyx/medium :kafka
                         :kafka/topic "hecuba-measurements-queue"
-                        :kafka/zookeeper "127.0.0.1:2181"
+                        :kafka/zookeeper (get-in config [:env-config :zookeeper/address])
                         :kafka/serializer-fn :kixi.hecuba.onyx.jobs.shared/serialize-message-json
                         :kafka/request-size 307200
                         :onyx/doc "Writes outgoing measurements to Kafka topic"}]
