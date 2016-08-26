@@ -12,6 +12,8 @@ ADD scripts/finish_media_driver.sh /etc/s6/media_driver/finish
 ADD scripts/run_peer.sh /opt/run_peer.sh
 ADD target/weather.jar /opt/weather.jar
 
+ADD resources/config.edn /opt/config.edn
+
 ENTRYPOINT ["/init"]
 EXPOSE 3196 3197 3198 40200
 EXPOSE 40200/udp

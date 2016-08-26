@@ -47,6 +47,7 @@
         "Actions:"
         "  start-peers [npeers]    Start Onyx peers."
         "  submit-job  [job-name]  Submit a registered job to an Onyx cluster."
+        "  kill-job  [job-id]    Removes the job from Zookeeper."
         ""]
        (clojure.string/join \newline)))
 
@@ -92,7 +93,13 @@
                        (println "Successfully submitted job: " job-id)
                        (println "Blocking on job completion...")
                        ;; writing the job id of the out so you can query it against zookeeper when you need to.
-                       (spit (str job-name "-pid.lock") job-id))))))
+                       (spit (str job-name "-pid.lock") job-id)))
+      "kill-job" (let [{:keys [peer-config] :as config}
+                       (read-config (:config options) {:profile options})
+                       job-id-to-delete (if (keyword? argument) argument (str argument))]
+                   ;; first kill the job, then run gc to clean up zookeeper.
+                   (onyx.api/kill-job peer-config job-id-to-delete)
+                   (onyx.api/gc peer-config)))))
 
 (defn new-system
   []
