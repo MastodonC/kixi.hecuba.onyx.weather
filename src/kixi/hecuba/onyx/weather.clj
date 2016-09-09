@@ -7,8 +7,10 @@
             [clojure.tools.cli :refer [parse-opts]]
             [aero.core :refer [read-config]]
             [com.stuartsierra.component :as component]
+            [onyx.plugin.kafka]
             [taoensso.timbre :as timbre]
             ;; load job
+            [kixi.hecuba.onyx.heartbeat_server :as heartbeat]
             [kixi.hecuba.onyx.jobs.weather]
             [kixi.hecuba.onyx.jobs.measurements]
             [kixi.hecuba.onyx.new-onyx-job :refer [new-onyx-job]])
@@ -22,6 +24,11 @@
         classf (io/resource file)
         relf (when (.exists (io/as-file f)) (io/as-file f))]
     (or classf relf)))
+
+(def web-server-config
+  {:web-server {:port 8082}
+   :logging {:level :info
+             :ns-blacklist ["org.eclipse.jetty"]}})
 
 (defn cli-options []
   [["-c" "--config FILE" "Aero/EDN config file"
@@ -46,7 +53,6 @@
         ""
         "Actions:"
         "  start-peers [npeers]    Start Onyx peers."
-        "  submit-job  [job-name]  Submit a registered job to an Onyx cluster."
         ""]
        (clojure.string/join \newline)))
 
@@ -58,17 +64,36 @@
   (timbre/info msg)
   (System/exit status))
 
+;; not related to the lib-onyx.peer api.
+(defn start-peer-internal [n peer-config env-config config]
+  (let [n-peers (or (try (Integer/parseInt 1) (catch Exception e)) n)
+        _ (timbre/info "Starting peer-group")
+        peer-group (onyx.api/start-peer-group peer-config)
+        _ (timbre/info "Starting env")
+        env (onyx.api/start-env env-config)
+        _ (timbre/info "Starting peers")
+        peers (onyx.api/start-peers n-peers peer-group)]
+    (timbre/infof "Attempting to connect to Zookeeper %s" (:zookeeper/address peer-config))
+    (.addShutdownHook (Runtime/getRuntime)
+                      (Thread.
+                       (fn []
+                         (doseq [v-peer peers]
+                           (onyx.api/shutdown-peer v-peer))
+                         (onyx.api/shutdown-peer-group peer-group)
+                         (shutdown-agents))))
+    (timbre/info "Started peers. Blocking forever.")
+    ;; submit the jobs.
+    (onyx.api/submit-job peer-config
+                         (onyx.job/register-job "weather-job" config))
+    (onyx.api/submit-job peer-config
+                         (onyx.job/register-job "measurements-job" config))
+    (.join (Thread/currentThread))))
+
 (defn assert-job-exists [job-name]
   (let [jobs (methods onyx.job/register-job)]
     (when-not (contains? jobs job-name)
       (error-msg (into [(str "There is no job registered under the name " job-name "\n")
                         "Available jobs: "] (keys jobs))))))
-
-(defn start-job [job-name peer-config options]
-  (let [job-id (:job-id
-                (onyx.api/submit-job peer-config
-                                     (onyx.job/register-job job-name (:config options))))]
-    (timbre/infof "Successfully submitted job: %s (%s)" job-id job-name)))
 
 (defn -main [& args]
   (let [{:keys [options arguments errors summary] :as pargs} (parse-opts args (cli-options))
@@ -80,18 +105,9 @@
     (case action
       "start-peers" (let [{:keys [env-config peer-config] :as config}
                           (read-config (:config options) {:profile (:profile options)})]
-                      (peer/start-peer argument peer-config env-config))
-
-      "submit-job" (let [{:keys [peer-config] :as config}
-                         (read-config (:config options) {:profile (:profile options)})
-                         job-name (if (keyword? argument) argument (str argument))]
-                     (assert-job-exists job-name)
-                     (let [job-id (:job-id
-                                   (onyx.api/submit-job peer-config
-                                                        (onyx.job/register-job job-name config)))]
-                       (println "Successfully submitted job: " job-id)
-                       (println "Blocking on job completion...")
-                       (onyx.test-helper/feedback-exception! peer-config job-id))))))
+                      (.start
+                       (heartbeat/new-web-server web-server-config))
+                      (start-peer-internal argument peer-config env-config config)))))
 
 (defn new-system
   []

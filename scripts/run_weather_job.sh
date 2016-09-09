@@ -4,10 +4,6 @@
 # see https://siddhesh.in/posts/malloc-per-thread-arenas-in-glibc.html
 
 ONYX_ID=khow
-NPEERS=10
-
-echo "Using Hecuba user: ${HECUBA_USERNAME}"
-echo "Using Hecuba endpoint: ${HECUBA_ENDPOINT}"
 
 CGROUPS_MEM=$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes)
 MEMINFO_MEM=$(($(awk '/MemTotal/ {print $2}' /proc/meminfo)*1024))
@@ -28,10 +24,11 @@ XMX=$(awk '{printf("%d",$1*$2/1024^2)}' <<< " ${MEM} ${JVM_PEER_HEAP_RATIO} ")
 
 : ${PEER_JAVA_OPTS:='-XX:+UseG1GC -server'}
 
-echo "Starting peer id ${ONYX_ID} with ${NPEERS} peers"
+echo "Submitting weather job to peer id ${ONYX_ID}"
 
 
 /usr/bin/java $PEER_JAVA_OPTS \
               "-Xmx${XMX}m" \
               -cp /opt/weather.jar \
-              kixi.hecuba.onyx.weather start-peers "$NPEERS" -p :mesos -c /opt/config.edn
+              kixi.hecuba.onyx.weather submit-job "weather-job" -p :mesos -c /opt/config.edn
+

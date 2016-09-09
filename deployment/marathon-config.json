@@ -1,0 +1,40 @@
+{
+    "id": "kixi.hecuba.onyx.weather-peers",
+    "labels": {
+        "environment": "staging"
+    },
+    "container": {
+        "type": "DOCKER",
+        "docker": {
+            "network": "HOST",
+            "image": "mastodonc/kixi.hecuba.onyx.weather:d80116",
+            "privileged": true,
+            "parameters": [
+              {"key":"shm-size", "value": "256"}
+            ],
+            "forcePullImage": true},
+        "volumes": [{"containerPath": "/dev/log",
+                     "hostPath": "/dev/log",
+                     "mode": "RW"}]},
+    "uris": [ "file:///home/ubuntu/docker.tar.gz" ],
+    "args": ["/opt/run_peer.sh"],
+    "ports": [0],
+    "env": {"ENV":"staging",
+            "SYSTEM_ID":"kixi.hecuba.onyx.weather",
+            "MAX_MEMORY":"256",
+            "LOGGER": "cat",
+            "ZOOKEEPER_CONNECT": "$(cat /etc/zookeeper/server-ip-ports)",
+            "ONYX_PEER_COUNT": "10",
+            "ONYX_ID": "onyx-khow-20160825",
+                        "ONYX_KAFKA_GROUP_ID_ROUTABLE_MESSAGES": "onyx-khow-routable-messages-1",
+            "SKIP_NOTIFY": "false",
+            "ONYX_KAFKA_OFFSET_RESET_ROUTABLE_MESSAGES": "largest",
+            "ONYX_KAFKA_FORCE_RESET_ROUTABLE_MESSAGES": "false",
+            "NATS_SERVER_URLS": "$(cat /etc/gnatsd/server-urls)"},
+
+    "cpus": 0.5,
+    "mem": 1536.0,
+    "instances": 1,
+    "constraints": [["hostname", "UNIQUE"]],
+    "upgradeStrategy": {
+        "minimumHealthCapacity": 0}}

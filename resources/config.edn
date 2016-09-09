@@ -1,31 +1,40 @@
 {:env-config
  {:onyx/tenancy-id #profile {:default "1"
-                             :docker #env ONYX_ID}
+                             :docker "1"
+			     :mesos "khow1"}
   :onyx.bookkeeper/server? false
   :onyx.bookkeeper/local-quorum? true
   :onyx.bookkeeper/delete-server-data? true
   :onyx.bookkeeper/local-quorum-ports [3196 3197 3198]
   :onyx.bookkeeper/port 3196
   :zookeeper/address #profile {:default "127.0.0.1:2181"
-                               :docker "zookeeper:2181"}
+                               :docker "zookeeper:2181"
+			       :mesos "master.mesos:2181"}
   :zookeeper/server? #profile {:default false
-                               :docker false}
-  :zookeeper.server/port 2188
+                               :docker false
+			       :mesos false}
+  :zookeeper.server/port 2181
   :onyx.log/config #profile {:default {:level :info}
-                             :docker {:level :info}}}
+                             :docker {:level :info}
+			     :mesos {:level :info}}}
  :peer-config
  {:onyx/tenancy-id #profile {:default "1"
-                             :docker #env ONYX_ID}
+                             :docker "1"
+			     :mesos "khow1"}
   :zookeeper/address #profile {:default "127.0.0.1:2181"
-                               :docker "zookeeper:2181"}
+                               :docker "zookeeper:2181"
+			       :mesos "master.mesos:2181"}
   :onyx.peer/job-scheduler :onyx.job-scheduler/balanced
   :onyx.peer/zookeeper-timeout 60000
   :onyx.messaging/allow-short-circuit? #profile {:default false
-                                                 :docker true}
+                                                 :docker true
+					         :mesos true}
   :onyx.messaging/impl :aeron
   :onyx.messaging/bind-addr #or [#env BIND_ADDR "localhost"]
   :onyx.messaging/peer-port 40200
   :onyx.messaging.aeron/embedded-driver? #profile {:default true
-                                                   :docker false}
+                                                   :docker false
+					           :mesos false}
   :onyx.log/config #profile {:default {:level :info}
-                             :docker {:level :info}}}}
+                             :docker {:level :info}
+  			     :mesos {:level :info}}}}

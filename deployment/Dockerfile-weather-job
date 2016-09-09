@@ -9,11 +9,13 @@ RUN apk add --update libgcc libstdc++ bash bash-doc bash-completion
 ADD scripts/run_media_driver.sh /etc/services.d/media_driver/run
 ADD scripts/finish_media_driver.sh /etc/s6/media_driver/finish
 
-ADD scripts/run_peer.sh /opt/run_peer.sh
+ADD scripts/run_weather_job.sh /opt/run_weather_job.sh
 ADD target/weather.jar /opt/weather.jar
+
+ADD resources/config.edn /opt/config.edn
 
 ENTRYPOINT ["/init"]
 EXPOSE 3196 3197 3198 40200
 EXPOSE 40200/udp
 
-CMD ["opt/run_peer.sh"]
+CMD ["opt/run_weather_job.sh"]
